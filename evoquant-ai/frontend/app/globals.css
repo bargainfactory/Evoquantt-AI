@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 215 28% 7%;
+    --foreground: 210 40% 96%;
+    --card: 215 25% 10%;
+    --card-foreground: 210 40% 96%;
+    --popover: 215 25% 10%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 160 100% 41%;
+    --primary-foreground: 215 28% 7%;
+    --secondary: 215 20% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 215 20% 14%;
+    --muted-foreground: 215 16% 55%;
+    --accent: 215 20% 18%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 215 20% 18%;
+    --input: 215 20% 14%;
+    --ring: 160 100% 41%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
+  }
+}
+
+@layer components {
+  .evo-card {
+    @apply bg-card border border-evo-border rounded-lg p-4;
+  }
+  .evo-badge-green {
+    @apply bg-green-500/10 text-green-400 border border-green-500/20 text-xs px-2 py-0.5 rounded-full;
+  }
+  .evo-badge-red {
+    @apply bg-red-500/10 text-red-400 border border-red-500/20 text-xs px-2 py-0.5 rounded-full;
+  }
+  .evo-badge-blue {
+    @apply bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs px-2 py-0.5 rounded-full;
+  }
+  .evo-number-green { @apply text-evo-green font-mono tabular-nums; }
+  .evo-number-red { @apply text-evo-red font-mono tabular-nums; }
+  .evo-price { @apply font-mono text-sm tabular-nums; }
+  .evo-glow {
+    box-shadow: 0 0 20px rgba(0, 208, 156, 0.15);
+  }
+  .glass {
+    backdrop-filter: blur(12px);
+    background: rgba(22, 27, 34, 0.8);
+    border: 1px solid rgba(48, 54, 61, 0.5);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #30363D; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* TradingView chart fix */
+.tv-chart-container { height: 100%; }
+
+/* Plotly overrides */
+.js-plotly-plot .plotly { background: transparent !important; }
+.modebar { display: none !important; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+
+@keyframes tickUp {
+  0% { color: #00D09C; }
+  100% { color: inherit; }
+}
+@keyframes tickDown {
+  0% { color: #FF4B4B; }
+  100% { color: inherit; }
+}
+.tick-up { animation: tickUp 0.5s ease-out; }
+.tick-down { animation: tickDown 0.5s ease-out; }
