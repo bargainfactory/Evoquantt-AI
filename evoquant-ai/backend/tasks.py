@@ -15,8 +15,8 @@ logger = get_task_logger(__name__)
 # Celery app
 celery_app = Celery(
     "evoquant",
-    broker=settings.redis_url,
-    backend=settings.redis_url,
+    broker=settings.CELERY_BROKER_URL,
+    backend=settings.CELERY_RESULT_BACKEND,
     include=["tasks"],
 )
 
@@ -81,7 +81,7 @@ def run_recursive_sell_task(
     import pandas as pd
     from engines.recursive_sell_engine import RecursiveSellEngine
 
-    r = redis_lib.from_url(settings.redis_url)
+    r = redis_lib.from_url(settings.REDIS_URL)
     key = f"recursive_sell:{job_id}"
 
     try:
@@ -185,7 +185,7 @@ def run_backtest_task(
     import pandas as pd
     from engines.ta_engine import TAEngine
 
-    r = redis_lib.from_url(settings.redis_url)
+    r = redis_lib.from_url(settings.REDIS_URL)
     key = f"backtest:{job_id}"
 
     try:
@@ -307,7 +307,7 @@ def run_nightly_evolution():
     import redis as redis_lib
     from engines.evolution_engine import EvolutionEngine
 
-    r = redis_lib.from_url(settings.redis_url)
+    r = redis_lib.from_url(settings.REDIS_URL)
 
     symbols_by_class = {
         "stocks": ["AAPL", "MSFT", "TSLA", "NVDA", "GOOGL", "META", "AMZN", "SPY", "QQQ"],
@@ -350,7 +350,7 @@ def refresh_market_cache():
     import json
     import redis as redis_lib
 
-    r = redis_lib.from_url(settings.redis_url)
+    r = redis_lib.from_url(settings.REDIS_URL)
     watchlist_key = "market:watchlist"
     watchlist_raw = r.get(watchlist_key)
 

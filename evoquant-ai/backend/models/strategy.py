@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID, uuid4
@@ -22,8 +22,8 @@ class Strategy(SQLModel, table=True):
     recursive_sell_config: Optional[str] = None  # JSON
     is_active: bool = True
     is_paper: bool = True
-    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class StrategyRun(SQLModel, table=True):
@@ -34,16 +34,16 @@ class StrategyRun(SQLModel, table=True):
     user_id: UUID = Field(foreign_key="users.id", index=True)
     run_type: str  # backtest | live | paper | optimization
     status: str = "running"  # running | completed | failed
-    sharpe_ratio: Optional[Decimal] = Field(default=None, max_digits=8, decimal_places=4)
-    total_return: Optional[Decimal] = Field(default=None, max_digits=10, decimal_places=6)
-    max_drawdown: Optional[Decimal] = Field(default=None, max_digits=8, decimal_places=4)
-    win_rate: Optional[Decimal] = Field(default=None, max_digits=6, decimal_places=4)
+    sharpe_ratio: Optional[Decimal] = Field(default=None)
+    total_return: Optional[Decimal] = Field(default=None)
+    max_drawdown: Optional[Decimal] = Field(default=None)
+    win_rate: Optional[Decimal] = Field(default=None)
     total_trades: int = 0
     recursive_iterations: int = 0
     best_params: Optional[str] = None  # JSON
     result_json: Optional[str] = None
     error_message: Optional[str] = None
-    started_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    started_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
 
 

@@ -15,7 +15,7 @@ export default function AiCopilotPage() {
 
   const { data: suggestions } = useQuery({
     queryKey: ["evo-suggestions", activeSymbol],
-    queryFn: () => api.getSymbolSuggestions(activeSymbol).then((r) => r.data),
+    queryFn: () => api.getAiSuggestions(activeSymbol).then((r) => r.data),
     staleTime: 60000,
   });
 

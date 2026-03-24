@@ -38,7 +38,7 @@ async def list_alerts(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(
+    result = await session.scalars(
         select(Alert).where(Alert.user_id == current_user.id).order_by(Alert.created_at.desc())
     )
     return result.all()
@@ -50,7 +50,7 @@ async def delete_alert(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(select(Alert).where(Alert.id == alert_id, Alert.user_id == current_user.id))
+    result = await session.scalars(select(Alert).where(Alert.id == alert_id, Alert.user_id == current_user.id))
     alert = result.first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -64,7 +64,7 @@ async def toggle_alert(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(select(Alert).where(Alert.id == alert_id, Alert.user_id == current_user.id))
+    result = await session.scalars(select(Alert).where(Alert.id == alert_id, Alert.user_id == current_user.id))
     alert = result.first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")

@@ -45,6 +45,7 @@ export const api = {
   register: (data: { email: string; username: string; password: string; full_name?: string }) =>
     getApiClient().post("/auth/register", data),
   getMe: () => getApiClient().get("/auth/me"),
+  updateProfile: (data: Record<string, unknown>) => getApiClient().patch("/auth/me", data),
   setup2fa: () => getApiClient().post("/auth/2fa/setup"),
   confirm2fa: (code: string) => getApiClient().post("/auth/2fa/confirm", { code }),
 
@@ -94,7 +95,9 @@ export const api = {
   // Evolution Lab
   runEvolution: (config: Record<string, unknown>) => getApiClient().post("/evolution/run", config),
   getEvolutionJob: (jobId: string) => getApiClient().get(`/evolution/job/${jobId}`),
+  getEvolutionStatus: (jobId: string) => getApiClient().get(`/evolution/job/${jobId}`),
   getLeaderboard: () => getApiClient().get("/evolution/leaderboard"),
+  getEvolutionLeaderboard: () => getApiClient().get("/evolution/leaderboard"),
 
   // DEX
   uniswapQuote: (data: Record<string, unknown>) => getApiClient().post("/dex/uniswap/quote", data),
@@ -102,8 +105,8 @@ export const api = {
   jupiterQuote: (data: Record<string, unknown>) => getApiClient().post("/dex/jupiter/quote", data),
   jupiterSwap: (data: Record<string, unknown>) => getApiClient().post("/dex/jupiter/swap", data),
   jupiterPrice: (tokens: string, vs?: string) => getApiClient().get("/dex/jupiter/price", { params: { tokens, vs } }),
-  getBestRoute: (chain: string, token_in: string, token_out: string, amount: string) =>
-    getApiClient().get("/dex/best-route", { params: { chain, token_in, token_out, amount } }),
+  getBestRoute: (data: { chain: string; from_token: string; to_token: string; amount: number }) =>
+    getApiClient().get("/dex/best-route", { params: data }),
 
   // Brokers
   connectBroker: (data: Record<string, unknown>) => getApiClient().post("/brokers/connect", data),
@@ -118,12 +121,14 @@ export const api = {
   // Alerts
   createAlert: (data: Record<string, unknown>) => getApiClient().post("/alerts/", data),
   listAlerts: () => getApiClient().get("/alerts/"),
+  getAlerts: () => getApiClient().get("/alerts/"),
   deleteAlert: (id: string) => getApiClient().delete(`/alerts/${id}`),
   toggleAlert: (id: string) => getApiClient().patch(`/alerts/${id}/toggle`),
 
   // Backtest
   runBacktest: (config: Record<string, unknown>) => getApiClient().post("/backtest/run", config),
   getBacktestJob: (jobId: string) => getApiClient().get(`/backtest/job/${jobId}`),
+  getBacktestResult: (jobId: string) => getApiClient().get(`/backtest/result/${jobId}`),
 
   // AI Copilot
   askEvo: (message: string, context?: Record<string, unknown>, symbol?: string) =>

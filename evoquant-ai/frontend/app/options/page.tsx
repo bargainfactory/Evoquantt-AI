@@ -93,8 +93,8 @@ export default function OptionsPage() {
                           layout={{
                             paper_bgcolor: "transparent", plot_bgcolor: "transparent",
                             font: { color: "#8B949E", size: 11 },
-                            xaxis: { title: "Underlying Price", gridcolor: "#161B22" },
-                            yaxis: { title: "P&L ($)", gridcolor: "#161B22", zerolinecolor: "#30363D" },
+                            xaxis: { title: { text: "Underlying Price" }, gridcolor: "#161B22" },
+                            yaxis: { title: { text: "P&L ($)" }, gridcolor: "#161B22", zerolinecolor: "#30363D" },
                             margin: { t: 10, r: 10, b: 40, l: 50 },
                             height: 220,
                             shapes: [{

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -7,7 +7,7 @@ from sqlmodel import Field, SQLModel
 
 
 class UserBase(SQLModel):
-    email: EmailStr = Field(unique=True, index=True)
+    email: str = Field(unique=True, index=True)
     username: str = Field(unique=True, index=True, min_length=3, max_length=50)
     full_name: Optional[str] = None
     is_active: bool = True
@@ -28,8 +28,8 @@ class User(UserBase, table=True):
     totp_backup_codes: Optional[str] = None  # JSON-encoded list
     wallet_addresses: Optional[str] = None   # JSON-encoded dict
     broker_credentials: Optional[str] = None  # PQ-encrypted JSON
-    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     last_login: Optional[datetime] = None
 
 

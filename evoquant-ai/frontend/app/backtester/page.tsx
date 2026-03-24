@@ -221,7 +221,7 @@ export default function BacktesterPage() {
                         plot_bgcolor: "transparent",
                         font: { color: "#8B949E", size: 11 },
                         xaxis: { gridcolor: "#161B22", showgrid: true },
-                        yaxis: { title: "Portfolio Value ($)", gridcolor: "#161B22", tickprefix: "$" },
+                        yaxis: { title: { text: "Portfolio Value ($)" }, gridcolor: "#161B22", tickprefix: "$" },
                         margin: { t: 10, r: 10, b: 40, l: 70 },
                         height: 280,
                         showlegend: false,

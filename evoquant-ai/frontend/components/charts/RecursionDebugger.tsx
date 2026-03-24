@@ -88,9 +88,9 @@ export function RecursionDebugger({
     paper_bgcolor: "transparent",
     plot_bgcolor: "transparent",
     font: { color: "#8B949E", size: 11 },
-    xaxis: { title: "Iteration", gridcolor: "#161B22", zerolinecolor: "#30363D" },
-    yaxis: { title: "Sharpe Ratio", gridcolor: "#161B22", zerolinecolor: "#30363D" },
-    yaxis2: { title: "Return %", overlaying: "y", side: "right", gridcolor: "transparent" },
+    xaxis: { title: { text: "Iteration" }, gridcolor: "#161B22", zerolinecolor: "#30363D" },
+    yaxis: { title: { text: "Sharpe Ratio" }, gridcolor: "#161B22", zerolinecolor: "#30363D" },
+    yaxis2: { title: { text: "Return %" }, overlaying: "y", side: "right", gridcolor: "transparent" },
     legend: { x: 0, y: 1, bgcolor: "transparent" },
     margin: { t: 20, r: 50, b: 40, l: 50 },
     height: 300,
@@ -111,7 +111,7 @@ export function RecursionDebugger({
   const treeData: Data[] = allNodes.length > 0 ? [
     {
       type: "scatter" as const,
-      mode: "markers+text" as const,
+      mode: "markers+text" as unknown as "markers",
       x: allNodes.map((n) => n.depth + (n.iteration % 3) * 0.3),
       y: allNodes.map((n) => n.sharpe),
       text: allNodes.map((n) => n.is_best ? "★" : ""),
@@ -140,8 +140,8 @@ export function RecursionDebugger({
     paper_bgcolor: "transparent",
     plot_bgcolor: "transparent",
     font: { color: "#8B949E", size: 11 },
-    xaxis: { title: "Depth Level", gridcolor: "#161B22", zerolinecolor: "#30363D", dtick: 1 },
-    yaxis: { title: "Sharpe Ratio", gridcolor: "#161B22", zerolinecolor: "#30363D" },
+    xaxis: { title: { text: "Depth Level" }, gridcolor: "#161B22", zerolinecolor: "#30363D", dtick: 1 },
+    yaxis: { title: { text: "Sharpe Ratio" }, gridcolor: "#161B22", zerolinecolor: "#30363D" },
     margin: { t: 20, r: 20, b: 40, l: 50 },
     height: 300,
   };

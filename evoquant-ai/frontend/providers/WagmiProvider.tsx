@@ -2,7 +2,7 @@
 
 import { WagmiProvider as WagmiProviderBase, createConfig, http } from "wagmi";
 import { mainnet, sepolia, polygon, arbitrum, optimism, base } from "wagmi/chains";
-import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, getDefaultConfig, darkTheme } from "@rainbow-me/rainbowkit";
 import "@rainbow-me/rainbowkit/styles.css";
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo-project-id";
@@ -26,20 +26,12 @@ export function WagmiProvider({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProviderBase config={config}>
       <RainbowKitProvider
-        theme={{
-          lightMode: {
-            accentColor: "#00D09C",
-            accentColorForeground: "#0D1117",
-            borderRadius: "medium",
-            fontStack: "system",
-          } as never,
-          darkMode: {
-            accentColor: "#00D09C",
-            accentColorForeground: "#0D1117",
-            borderRadius: "medium",
-            fontStack: "system",
-          } as never,
-        }}
+        theme={darkTheme({
+          accentColor: "#00D09C",
+          accentColorForeground: "#0D1117",
+          borderRadius: "medium",
+          fontStack: "system",
+        })}
       >
         {children}
       </RainbowKitProvider>

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
@@ -30,10 +30,10 @@ async def register(
     user_in: UserCreate,
     session: AsyncSession = Depends(get_session),
 ):
-    existing = await session.exec(select(User).where(User.email == user_in.email))
+    existing = await session.scalars(select(User).where(User.email == user_in.email))
     if existing.first():
         raise HTTPException(status_code=400, detail="Email already registered")
-    existing_un = await session.exec(select(User).where(User.username == user_in.username))
+    existing_un = await session.scalars(select(User).where(User.username == user_in.username))
     if existing_un.first():
         raise HTTPException(status_code=400, detail="Username already taken")
 
@@ -59,7 +59,7 @@ async def login(
     totp_code: Annotated[str | None, Body()] = None,
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(select(User).where(User.email == email))
+    result = await session.scalars(select(User).where(User.email == email))
     user = result.first()
     if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -71,7 +71,7 @@ async def login(
         if not TOTPManager.verify(user.totp_secret, totp_code):
             raise HTTPException(status_code=401, detail="Invalid TOTP code")
 
-    user.last_login = datetime.now(tz=timezone.utc)
+    user.last_login = datetime.utcnow()
     session.add(user)
 
     al = AuditLogger(session)

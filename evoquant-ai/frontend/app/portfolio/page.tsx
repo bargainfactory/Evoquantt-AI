@@ -138,7 +138,7 @@ export default function PortfolioPage() {
                   <div className="evo-card">
                     <div className="text-sm font-semibold text-white mb-3">Allocation</div>
                     {allocation ? (
-                      <AllocationChart allocation={allocation} />
+                      <AllocationChart allocations={allocation} />
                     ) : (
                       <div className="h-32 flex items-center justify-center text-sm text-muted-foreground">No positions</div>
                     )}

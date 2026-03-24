@@ -19,14 +19,14 @@ async def get_portfolio_summary(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(select(Portfolio).where(Portfolio.user_id == current_user.id))
+    result = await session.scalars(select(Portfolio).where(Portfolio.user_id == current_user.id))
     portfolio = result.first()
     if not portfolio:
         portfolio = Portfolio(user_id=current_user.id)
         session.add(portfolio)
         await session.flush()
 
-    pos_result = await session.exec(
+    pos_result = await session.scalars(
         select(PortfolioPosition).where(PortfolioPosition.user_id == current_user.id)
     )
     positions = pos_result.all()
@@ -54,7 +54,7 @@ async def get_positions(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(
+    result = await session.scalars(
         select(PortfolioPosition).where(PortfolioPosition.user_id == current_user.id)
     )
     positions = result.all()
@@ -84,7 +84,7 @@ async def get_portfolio_history(
 ):
     from datetime import datetime, timedelta, timezone
     cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
-    result = await session.exec(
+    result = await session.scalars(
         select(PortfolioSnapshot)
         .where(PortfolioSnapshot.user_id == current_user.id)
         .where(PortfolioSnapshot.timestamp >= cutoff)
@@ -106,7 +106,7 @@ async def get_risk_metrics(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(
+    result = await session.scalars(
         select(PortfolioSnapshot)
         .where(PortfolioSnapshot.user_id == current_user.id)
         .order_by(PortfolioSnapshot.timestamp)
@@ -138,7 +138,7 @@ async def get_allocation(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(
+    result = await session.scalars(
         select(PortfolioPosition).where(PortfolioPosition.user_id == current_user.id)
     )
     positions = result.all()

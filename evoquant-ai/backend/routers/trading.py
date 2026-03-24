@@ -67,7 +67,7 @@ async def get_orders(
     if symbol:
         query = query.where(Trade.symbol == symbol)
     query = query.order_by(Trade.created_at.desc()).limit(limit).offset(offset)
-    result = await session.exec(query)
+    result = await session.scalars(query)
     return result.all()
 
 
@@ -77,7 +77,7 @@ async def get_order(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(select(Trade).where(Trade.id == order_id, Trade.user_id == current_user.id))
+    result = await session.scalars(select(Trade).where(Trade.id == order_id, Trade.user_id == current_user.id))
     trade = result.first()
     if not trade:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -90,7 +90,7 @@ async def cancel_order(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    result = await session.exec(select(Trade).where(Trade.id == order_id, Trade.user_id == current_user.id))
+    result = await session.scalars(select(Trade).where(Trade.id == order_id, Trade.user_id == current_user.id))
     trade = result.first()
     if not trade:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -111,5 +111,5 @@ async def get_positions(
     query = select(PortfolioPosition).where(PortfolioPosition.user_id == current_user.id)
     if broker:
         query = query.where(PortfolioPosition.broker == broker)
-    result = await session.exec(query)
+    result = await session.scalars(query)
     return result.all()

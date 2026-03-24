@@ -76,7 +76,7 @@ async def get_current_user(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
-    result = await session.exec(select(User).where(User.id == UUID(user_id)))
+    result = await session.scalars(select(User).where(User.id == UUID(user_id)))
     user = result.first()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")

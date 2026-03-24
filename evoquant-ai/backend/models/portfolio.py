@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID, uuid4
@@ -14,16 +14,16 @@ class PortfolioPosition(SQLModel, table=True):
     symbol: str = Field(index=True)
     asset_class: str
     broker: str
-    quantity: Decimal = Field(max_digits=20, decimal_places=8)
-    avg_cost: Decimal = Field(max_digits=20, decimal_places=8)
-    current_price: Optional[Decimal] = Field(default=None, max_digits=20, decimal_places=8)
-    unrealized_pnl: Optional[Decimal] = Field(default=None, max_digits=20, decimal_places=8)
-    realized_pnl: Decimal = Field(default=Decimal("0"), max_digits=20, decimal_places=8)
-    market_value: Optional[Decimal] = Field(default=None, max_digits=20, decimal_places=8)
-    weight: Optional[Decimal] = Field(default=None, max_digits=6, decimal_places=4)
+    quantity: Decimal = Field()
+    avg_cost: Decimal = Field()
+    current_price: Optional[Decimal] = Field(default=None)
+    unrealized_pnl: Optional[Decimal] = Field(default=None)
+    realized_pnl: Decimal = Field(default=Decimal("0"))
+    market_value: Optional[Decimal] = Field(default=None)
+    weight: Optional[Decimal] = Field(default=None)
     is_paper: bool = True
-    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Portfolio(SQLModel, table=True):
@@ -31,15 +31,15 @@ class Portfolio(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id", unique=True)
-    total_value: Decimal = Field(default=Decimal("0"), max_digits=20, decimal_places=2)
-    cash_balance: Decimal = Field(default=Decimal("100000"), max_digits=20, decimal_places=2)
-    daily_pnl: Decimal = Field(default=Decimal("0"), max_digits=20, decimal_places=2)
-    total_pnl: Decimal = Field(default=Decimal("0"), max_digits=20, decimal_places=2)
-    sharpe_ratio: Optional[Decimal] = Field(default=None, max_digits=8, decimal_places=4)
-    max_drawdown: Optional[Decimal] = Field(default=None, max_digits=8, decimal_places=4)
-    win_rate: Optional[Decimal] = Field(default=None, max_digits=6, decimal_places=4)
+    total_value: Decimal = Field(default=Decimal("0"))
+    cash_balance: Decimal = Field(default=Decimal("100000"))
+    daily_pnl: Decimal = Field(default=Decimal("0"))
+    total_pnl: Decimal = Field(default=Decimal("0"))
+    sharpe_ratio: Optional[Decimal] = Field(default=None)
+    max_drawdown: Optional[Decimal] = Field(default=None)
+    win_rate: Optional[Decimal] = Field(default=None)
     is_paper: bool = True
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class PortfolioSnapshot(SQLModel, table=True):
@@ -47,7 +47,7 @@ class PortfolioSnapshot(SQLModel, table=True):
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id", index=True)
-    total_value: Decimal = Field(max_digits=20, decimal_places=2)
-    cash_balance: Decimal = Field(max_digits=20, decimal_places=2)
+    total_value: Decimal = Field()
+    cash_balance: Decimal = Field()
     positions_json: str  # JSON snapshot of positions
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc), index=True)
+    timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)

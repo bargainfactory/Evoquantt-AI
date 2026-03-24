@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
@@ -47,9 +47,9 @@ class TradeBase(SQLModel):
     asset_class: AssetClass
     side: OrderSide
     order_type: OrderType
-    quantity: Decimal = Field(max_digits=20, decimal_places=8)
-    price: Optional[Decimal] = Field(default=None, max_digits=20, decimal_places=8)
-    stop_price: Optional[Decimal] = Field(default=None, max_digits=20, decimal_places=8)
+    quantity: Decimal = Field()
+    price: Optional[Decimal] = Field(default=None)
+    stop_price: Optional[Decimal] = Field(default=None)
     broker: str
     strategy_id: Optional[UUID] = Field(default=None)
     is_paper: bool = True
@@ -62,14 +62,14 @@ class Trade(TradeBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="users.id", index=True)
     status: OrderStatus = OrderStatus.PENDING
-    filled_quantity: Decimal = Field(default=Decimal("0"), max_digits=20, decimal_places=8)
-    filled_price: Optional[Decimal] = Field(default=None, max_digits=20, decimal_places=8)
-    commission: Decimal = Field(default=Decimal("0"), max_digits=10, decimal_places=4)
-    slippage: Decimal = Field(default=Decimal("0"), max_digits=10, decimal_places=6)
+    filled_quantity: Decimal = Field(default=Decimal("0"))
+    filled_price: Optional[Decimal] = Field(default=None)
+    commission: Decimal = Field(default=Decimal("0"))
+    slippage: Decimal = Field(default=Decimal("0"))
     broker_order_id: Optional[str] = None
-    pnl: Optional[Decimal] = Field(default=None, max_digits=20, decimal_places=8)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    pnl: Optional[Decimal] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     filled_at: Optional[datetime] = None
 
 

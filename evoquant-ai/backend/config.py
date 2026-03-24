@@ -127,7 +127,7 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         if self.is_production:
             return [self.APP_URL]
-        return ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000"]
+        return ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://localhost", "http://127.0.0.1"]
 
 
 @lru_cache()

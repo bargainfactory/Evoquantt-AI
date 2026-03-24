@@ -21,6 +21,7 @@ interface AppStore {
   setTokens: (access: string, refresh: string) => void;
   logout: () => void;
   togglePaper: () => void;
+  setIsPaper: (value: boolean) => void;
   toggleSidebar: () => void;
 }
 
@@ -49,6 +50,7 @@ export const useAppStore = create<AppStore>()(
         set({ user: null, accessToken: null, refreshToken: null });
       },
       togglePaper: () => set((s) => ({ isPaper: !s.isPaper })),
+      setIsPaper: (value) => set({ isPaper: value }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
     }),
     {

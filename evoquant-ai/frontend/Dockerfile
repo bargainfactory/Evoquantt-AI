@@ -1,7 +1,8 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci --legacy-peer-deps
+RUN apk add --no-cache python3 make g++ libc6-compat linux-headers eudev-dev
+COPY package.json package-lock.json* yarn.lock* ./
+RUN npm install --legacy-peer-deps
 
 FROM node:20-alpine AS builder
 WORKDIR /app

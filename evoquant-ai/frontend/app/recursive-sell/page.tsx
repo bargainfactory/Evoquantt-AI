@@ -162,7 +162,7 @@ export default function RecursiveSellPage() {
             {/* Visual debugger */}
             <RecursionDebugger
               convergence={wsData.convergence as {depth: number; sharpe: number; total_return: number; iteration: number}[]}
-              tree={wsData.tree as {depth: number; iteration: number; params: Record<string, number>; sharpe: number; profit_uplift: number; win_rate: number; max_drawdown: number; total_return: number; is_best: boolean; optimizer: string; children?: unknown[]} | null}
+              tree={wsData.tree as any}
               isRunning={wsData.isRunning}
               bestSharpe={wsData.bestSharpe}
               bestReturn={wsData.bestReturn}

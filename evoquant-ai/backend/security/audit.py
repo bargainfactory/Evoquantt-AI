@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
@@ -22,7 +22,7 @@ class AuditLogEntry(SQLModel, table=True):
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     status: str = "success"  # success | failure
-    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class AuditLogger:
@@ -73,7 +73,7 @@ class AuditLogger:
         if action:
             query = query.where(AuditLogEntry.action == action)
         query = query.limit(limit).offset(offset)
-        result = await self.session.exec(query)
+        result = await self.session.scalars(query)
         return result.all()
 
 
