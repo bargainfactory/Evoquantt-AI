@@ -131,8 +131,8 @@ export const api = {
   getBacktestResult: (jobId: string) => getApiClient().get(`/backtest/result/${jobId}`),
 
   // AI Copilot
-  askEvo: (message: string, context?: Record<string, unknown>, symbol?: string) =>
-    getApiClient().post("/ai/ask", { message, context, symbol }),
+  askEvo: (message: string, context?: Record<string, unknown>, symbol?: string, history?: {role: string, content: string}[]) =>
+    getApiClient().post("/ai/ask", { message, context, symbol, history: history ?? [] }),
   getAiSuggestions: (symbol: string) => getApiClient().get(`/ai/suggestions/${symbol}`),
 };
 

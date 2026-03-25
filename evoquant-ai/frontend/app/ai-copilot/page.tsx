@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { WagmiProvider } from "@/providers/WagmiProvider";
 import { SolanaProvider } from "@/providers/SolanaProvider";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export default function AiCopilotPage() {
   const { activeSymbol } = useMarketStore();
+  const [triggerPrompt, setTriggerPrompt] = useState<string | undefined>();
 
   const { data: suggestions } = useQuery({
     queryKey: ["evo-suggestions", activeSymbol],
@@ -75,7 +77,7 @@ export default function AiCopilotPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Chat */}
               <div className="lg:col-span-2">
-                <AskEvo />
+                <AskEvo triggerPrompt={triggerPrompt} />
               </div>
 
               {/* Suggestions panel */}
@@ -150,6 +152,7 @@ export default function AiCopilotPage() {
                     ].map((prompt) => (
                       <button
                         key={prompt}
+                        onClick={() => setTriggerPrompt(`${prompt}__${Date.now()}`)}
                         className="w-full text-left text-xs text-muted-foreground hover:text-white px-2 py-1.5 rounded hover:bg-evo-surface/70 transition-colors border border-transparent hover:border-evo-border"
                       >
                         {prompt}

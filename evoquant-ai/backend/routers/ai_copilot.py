@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Literal
 
 from security.jwt_auth import get_current_user
 from models.user import User
@@ -9,10 +9,16 @@ from config import settings
 router = APIRouter()
 
 
+class ConversationMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class AskEvoRequest(BaseModel):
     message: str
     context: Optional[dict] = None
     symbol: Optional[str] = None
+    history: list[ConversationMessage] = []
 
 
 class AskEvoResponse(BaseModel):
@@ -42,18 +48,24 @@ async def ask_evo(
     req: AskEvoRequest,
     current_user: User = Depends(get_current_user),
 ):
+    context_str = f"\nUser context: {req.context}" if req.context else ""
+    symbol_str = f"\nAnalyzing symbol: {req.symbol}" if req.symbol else ""
+    user_content = req.message + context_str + symbol_str
+
+    # Build multi-turn messages from history
+    history_messages = [{"role": m.role, "content": m.content} for m in req.history]
+
     # Try Anthropic Claude first, then OpenAI, then deterministic fallback
     if settings.ANTHROPIC_API_KEY:
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-            context_str = f"\nUser context: {req.context}" if req.context else ""
-            symbol_str = f"\nAnalyzing symbol: {req.symbol}" if req.symbol else ""
+            messages = [*history_messages, {"role": "user", "content": user_content}]
             message = client.messages.create(
                 model="claude-opus-4-6",
                 max_tokens=1024,
                 system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": req.message + context_str + symbol_str}],
+                messages=messages,
             )
             return AskEvoResponse(
                 response=message.content[0].text,
@@ -66,12 +78,14 @@ async def ask_evo(
         try:
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                *history_messages,
+                {"role": "user", "content": user_content},
+            ]
             resp = await client.chat.completions.create(
                 model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": req.message},
-                ],
+                messages=messages,
                 max_tokens=1024,
             )
             return AskEvoResponse(
