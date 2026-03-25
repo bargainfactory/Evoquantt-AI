@@ -173,7 +173,11 @@ async def orderbook_stream(websocket: WebSocket, symbol: str):
             try:
                 base_price = float(ticker.fast_info.last_price or 100)
             except Exception:
-                base_price = 100.0
+                try:
+                    hist = ticker.history(period="1d")
+                    base_price = float(hist["Close"].iloc[-1]) if not hist.empty else 100.0
+                except Exception:
+                    base_price = 100.0
             while websocket.client_state == WebSocketState.CONNECTED:
                 spread = base_price * 0.0002
                 bids = [[round(base_price - spread * i, 4), round(random.uniform(10, 500), 0)] for i in range(1, 11)]
