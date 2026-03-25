@@ -37,6 +37,7 @@ async def connect_wallet(
     }
     current_user.wallet_addresses = json.dumps(wallets)
     session.add(current_user)
+    await session.commit()
     return {"message": f"{wallet.chain} wallet connected", "address": wallet.address}
 
 
@@ -65,6 +66,7 @@ async def disconnect_wallet(
     wallets.pop(chain, None)
     current_user.wallet_addresses = json.dumps(wallets)
     session.add(current_user)
+    await session.commit()
     return {"message": f"{chain} wallet disconnected"}
 
 

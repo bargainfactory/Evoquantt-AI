@@ -43,6 +43,7 @@ async def connect_broker(
     }
     current_user.broker_credentials = json.dumps(broker_creds)
     session.add(current_user)
+    await session.commit()
 
     al = AuditLogger(session)
     await al.log("connect_broker", "broker", user_id=current_user.id, details={"broker": creds.broker})

@@ -55,16 +55,24 @@ async def get_quote(symbol: str, current_user: User = Depends(get_current_user))
         except Exception:
             pass
     # Fallback: yfinance
-    import yfinance as yf
-    ticker = yf.Ticker(symbol)
-    info = ticker.fast_info
-    return {
-        "symbol": symbol,
-        "price": float(info.last_price or 0),
-        "high": float(info.day_high or 0),
-        "low": float(info.day_low or 0),
-        "source": "yfinance",
-    }
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        info = ticker.fast_info
+        try:
+            price = float(info.last_price or 0)
+        except Exception:
+            hist = ticker.history(period="1d")
+            price = float(hist["Close"].iloc[-1]) if not hist.empty else 0
+        return {
+            "symbol": symbol,
+            "price": price,
+            "high": float(info.day_high or 0),
+            "low": float(info.day_low or 0),
+            "source": "yfinance",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not fetch quote for {symbol}: {e}")
 
 
 @router.get("/ohlcv/{symbol}")
