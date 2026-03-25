@@ -82,8 +82,8 @@ async def get_portfolio_history(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    from datetime import datetime, timedelta, timezone
-    cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
+    from datetime import datetime, timedelta
+    cutoff = datetime.utcnow() - timedelta(days=days)
     result = await session.scalars(
         select(PortfolioSnapshot)
         .where(PortfolioSnapshot.user_id == current_user.id)

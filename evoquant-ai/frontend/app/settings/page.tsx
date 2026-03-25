@@ -34,13 +34,13 @@ export default function SettingsPage() {
     email: user?.email ?? "",
   });
   const [passwordForm, setPasswordForm] = useState({ current: "", next: "", confirm: "" });
-  const [brokerForm, setBrokerForm] = useState({ broker: "binance", api_key: "", api_secret: "", sandbox: true });
+  const [brokerForm, setBrokerForm] = useState({ broker: "binance", api_key: "", secret: "", testnet: true });
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [totpCode, setTotpCode] = useState("");
 
   const { data: brokers, refetch: refetchBrokers } = useQuery({
     queryKey: ["brokers"],
-    queryFn: () => api.listBrokers().then((r) => r.data),
+    queryFn: () => api.listBrokers().then((r) => r.data.brokers as string[]),
   });
 
   const { mutate: updateProfile, isPending: updatingProfile } = useMutation({
@@ -70,7 +70,7 @@ export default function SettingsPage() {
     onSuccess: () => {
       toast.success(`${brokerForm.broker} connected!`);
       refetchBrokers();
-      setBrokerForm((f) => ({ ...f, api_key: "", api_secret: "" }));
+      setBrokerForm((f) => ({ ...f, api_key: "", secret: "" }));
     },
     onError: () => toast.error("Failed to connect broker"),
   });
@@ -250,12 +250,12 @@ export default function SettingsPage() {
                       ))}
                     </select>
                   </div>
-                  {["api_key", "api_secret"].map((field) => (
+                  {[{ field: "api_key", label: "API Key" }, { field: "secret", label: "API Secret" }].map(({ field, label }) => (
                     <div key={field}>
-                      <label className="text-xs text-muted-foreground mb-1 block capitalize">{field.replace("_", " ")}</label>
+                      <label className="text-xs text-muted-foreground mb-1 block">{label}</label>
                       <input
                         type="password"
-                        value={brokerForm[field as "api_key" | "api_secret"]}
+                        value={brokerForm[field as "api_key" | "secret"]}
                         onChange={(e) => setBrokerForm((f) => ({ ...f, [field]: e.target.value }))}
                         placeholder="••••••••••••••••"
                         className="w-full bg-background border border-evo-border rounded px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-evo-green/50"
@@ -265,8 +265,8 @@ export default function SettingsPage() {
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={brokerForm.sandbox}
-                      onChange={(e) => setBrokerForm((f) => ({ ...f, sandbox: e.target.checked }))}
+                      checked={brokerForm.testnet}
+                      onChange={(e) => setBrokerForm((f) => ({ ...f, testnet: e.target.checked }))}
                       className="accent-evo-green"
                     />
                     <span className="text-xs text-muted-foreground">Sandbox / Testnet mode</span>
@@ -290,11 +290,11 @@ export default function SettingsPage() {
                     <div className="text-sm text-muted-foreground text-center py-6">No brokers connected</div>
                   ) : (
                     <div className="space-y-2">
-                      {brokers.map((b: { broker_name: string; is_sandbox: boolean }) => (
-                        <div key={b.broker_name} className="flex items-center justify-between px-3 py-2 bg-background/50 rounded">
+                      {brokers.map((name: string) => (
+                        <div key={name} className="flex items-center justify-between px-3 py-2 bg-background/50 rounded">
                           <div>
-                            <div className="text-sm text-white capitalize">{b.broker_name}</div>
-                            <div className="text-xs text-muted-foreground">{b.is_sandbox ? "Sandbox" : "Live"}</div>
+                            <div className="text-sm text-white capitalize">{name}</div>
+                            <div className="text-xs text-muted-foreground">Connected</div>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-evo-green" />
