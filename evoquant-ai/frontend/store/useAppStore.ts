@@ -17,12 +17,14 @@ interface AppStore {
   isPaper: boolean;
   sidebarCollapsed: boolean;
   theme: "dark" | "light";
+  onboardingDone: boolean;
   setUser: (user: User | null) => void;
   setTokens: (access: string, refresh: string) => void;
   logout: () => void;
   togglePaper: () => void;
   setIsPaper: (value: boolean) => void;
   toggleSidebar: () => void;
+  setOnboardingDone: () => void;
 }
 
 export const useAppStore = create<AppStore>()(
@@ -34,6 +36,7 @@ export const useAppStore = create<AppStore>()(
       isPaper: true,
       sidebarCollapsed: false,
       theme: "dark",
+      onboardingDone: false,
       setUser: (user) => set({ user }),
       setTokens: (access, refresh) => {
         if (typeof window !== "undefined") {
@@ -52,6 +55,7 @@ export const useAppStore = create<AppStore>()(
       togglePaper: () => set((s) => ({ isPaper: !s.isPaper })),
       setIsPaper: (value) => set({ isPaper: value }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setOnboardingDone: () => set({ onboardingDone: true }),
     }),
     {
       name: "evoquant-app",
@@ -62,6 +66,7 @@ export const useAppStore = create<AppStore>()(
         isPaper: s.isPaper,
         sidebarCollapsed: s.sidebarCollapsed,
         theme: s.theme,
+        onboardingDone: s.onboardingDone,
       }),
     }
   )

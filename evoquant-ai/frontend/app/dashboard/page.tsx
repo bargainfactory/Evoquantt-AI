@@ -12,6 +12,7 @@ import { useRealTimeTick } from "@/hooks/useMarketData";
 import { formatCurrency, formatPercent, getPnlColor, cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Activity, Shield, Zap, Globe } from "lucide-react";
 import Link from "next/link";
+import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 
 function WatchlistItem({ symbol }: { symbol: string }) {
   const tick = useRealTimeTick(symbol);
@@ -73,6 +74,7 @@ export default function DashboardPage() {
   return (
     <WagmiProvider>
       <SolanaProvider>
+        <OnboardingModal />
         <AppLayout>
           <div className="space-y-4 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
