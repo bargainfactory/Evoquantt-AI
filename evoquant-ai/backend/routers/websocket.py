@@ -1,14 +1,38 @@
 """
 WebSocket router for real-time market data, order updates, and recursive sell progress.
+
+Live data sources (no API key required):
+  - Crypto: Binance public WebSocket (wss://stream.binance.com) — tick-by-tick
+  - Stocks: yfinance polling every 5s — 15-min delayed during market hours
 """
 import asyncio
 import json
+import time
 from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+import httpx
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
 router = APIRouter()
+
+CRYPTO_BASES = {
+    "BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX",
+    "MATIC", "DOT", "LINK", "UNI", "AAVE", "LTC", "BCH", "ATOM",
+    "NEAR", "APT", "ARB", "OP", "SUI", "INJ", "TIA", "SEI",
+}
+
+
+def _is_crypto(symbol: str) -> bool:
+    s = symbol.upper().replace("-USDT", "").replace("USDT", "").replace("-USD", "")
+    return s in CRYPTO_BASES or symbol.upper().endswith("USDT")
+
+
+def _binance_ws_symbol(symbol: str) -> str:
+    s = symbol.upper().replace("-", "").replace("/", "")
+    if not s.endswith("USDT") and not s.endswith("BUSD"):
+        s = s + "USDT"
+    return s.lower()
 
 
 class ConnectionManager:
@@ -42,61 +66,126 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+async def _stream_binance_crypto(websocket: WebSocket, symbol: str):
+    """Connect to Binance public trade stream and relay ticks to client."""
+    import websockets as ws_lib
+    bs = _binance_ws_symbol(symbol)
+    url = f"wss://stream.binance.com:9443/ws/{bs}@aggTrade"
+    open_price = None
+    try:
+        async with ws_lib.connect(url, ping_interval=20) as binance_ws:
+            async for raw in binance_ws:
+                if websocket.client_state != WebSocketState.CONNECTED:
+                    break
+                data = json.loads(raw)
+                price = float(data["p"])
+                if open_price is None:
+                    open_price = price
+                change = price - open_price
+                await websocket.send_json({
+                    "type": "tick",
+                    "symbol": symbol.upper(),
+                    "price": price,
+                    "change": round(change, 6),
+                    "change_pct": round(change / open_price * 100, 4) if open_price else 0,
+                    "volume": float(data.get("q", 0)),
+                    "timestamp": data.get("T", time.time() * 1000) / 1000,
+                    "source": "binance",
+                })
+    except Exception:
+        pass
+
+
+async def _stream_yfinance_stock(websocket: WebSocket, symbol: str):
+    """Poll yfinance every 5 seconds for stock quotes."""
+    import yfinance as yf
+    ticker = yf.Ticker(symbol)
+    open_price = None
+    while websocket.client_state == WebSocketState.CONNECTED:
+        try:
+            hist = ticker.history(period="1d", interval="1m")
+            if not hist.empty:
+                price = float(hist["Close"].iloc[-1])
+                if open_price is None:
+                    open_price = float(hist["Open"].iloc[0])
+                change = price - open_price
+                await websocket.send_json({
+                    "type": "tick",
+                    "symbol": symbol.upper(),
+                    "price": round(price, 4),
+                    "change": round(change, 4),
+                    "change_pct": round(change / open_price * 100, 3) if open_price else 0,
+                    "timestamp": time.time(),
+                    "source": "yfinance",
+                })
+        except Exception:
+            pass
+        await asyncio.sleep(5)
+
+
 @router.websocket("/market/{symbol}")
 async def market_stream(websocket: WebSocket, symbol: str):
-    """Stream real-time ticker data for a symbol."""
+    """Stream real-time ticker. Binance WS for crypto, yfinance poll for stocks."""
     channel = f"market:{symbol}"
     await manager.connect(websocket, channel)
     try:
-        import yfinance as yf
-        import random
-        ticker = yf.Ticker(symbol)
-        base_info = ticker.fast_info
-        base_price = float(base_info.last_price or 100)
-
-        while True:
-            # Simulate real-time tick (replace with ccxt-pro watch_ticker in production)
-            change = random.gauss(0, base_price * 0.001)
-            price = base_price + change
-            base_price = price
-            await websocket.send_json({
-                "type": "tick",
-                "symbol": symbol,
-                "price": round(price, 4),
-                "change": round(change, 4),
-                "change_pct": round(change / base_price * 100, 3),
-                "timestamp": __import__("time").time(),
-            })
-            await asyncio.sleep(1)
+        if _is_crypto(symbol):
+            await _stream_binance_crypto(websocket, symbol)
+        else:
+            await _stream_yfinance_stock(websocket, symbol)
     except WebSocketDisconnect:
-        manager.disconnect(websocket, channel)
-    except Exception:
+        pass
+    finally:
         manager.disconnect(websocket, channel)
 
 
 @router.websocket("/orderbook/{symbol}")
 async def orderbook_stream(websocket: WebSocket, symbol: str):
-    """Stream order book depth."""
+    """Stream live order book from Binance (crypto) or simulated depth (stocks)."""
     channel = f"orderbook:{symbol}"
     await manager.connect(websocket, channel)
     try:
-        import random
-        import yfinance as yf
-        ticker = yf.Ticker(symbol)
-        base_price = float(ticker.fast_info.last_price or 100)
-
-        while True:
-            bids = [[round(base_price - i * 0.01, 4), round(random.uniform(1, 100), 2)] for i in range(1, 11)]
-            asks = [[round(base_price + i * 0.01, 4), round(random.uniform(1, 100), 2)] for i in range(1, 11)]
-            await websocket.send_json({
-                "type": "orderbook",
-                "symbol": symbol,
-                "bids": bids,
-                "asks": asks,
-                "timestamp": __import__("time").time(),
-            })
-            await asyncio.sleep(0.5)
+        if _is_crypto(symbol):
+            import websockets as ws_lib
+            bs = _binance_ws_symbol(symbol)
+            url = f"wss://stream.binance.com:9443/ws/{bs}@depth10@100ms"
+            try:
+                async with ws_lib.connect(url, ping_interval=20) as binance_ws:
+                    async for raw in binance_ws:
+                        if websocket.client_state != WebSocketState.CONNECTED:
+                            break
+                        data = json.loads(raw)
+                        await websocket.send_json({
+                            "type": "orderbook",
+                            "symbol": symbol.upper(),
+                            "bids": [[float(p), float(q)] for p, q in data.get("bids", [])],
+                            "asks": [[float(p), float(q)] for p, q in data.get("asks", [])],
+                            "timestamp": time.time(),
+                            "source": "binance",
+                        })
+            except Exception:
+                pass
+        else:
+            # For stocks, poll Binance REST for mid-price simulation
+            import yfinance as yf
+            import random
+            ticker = yf.Ticker(symbol)
+            try:
+                base_price = float(ticker.fast_info.last_price or 100)
+            except Exception:
+                base_price = 100.0
+            while websocket.client_state == WebSocketState.CONNECTED:
+                spread = base_price * 0.0002
+                bids = [[round(base_price - spread * i, 4), round(random.uniform(10, 500), 0)] for i in range(1, 11)]
+                asks = [[round(base_price + spread * i, 4), round(random.uniform(10, 500), 0)] for i in range(1, 11)]
+                await websocket.send_json({
+                    "type": "orderbook", "symbol": symbol.upper(),
+                    "bids": bids, "asks": asks, "timestamp": time.time(), "source": "estimated",
+                })
+                await asyncio.sleep(2)
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(websocket, channel)
 
 
@@ -110,6 +199,8 @@ async def portfolio_stream(websocket: WebSocket, user_id: str):
             await websocket.send_json({"type": "heartbeat", "user_id": user_id})
             await asyncio.sleep(5)
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(websocket, channel)
 
 

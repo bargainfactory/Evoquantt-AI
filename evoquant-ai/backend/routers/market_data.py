@@ -16,6 +16,23 @@ from config import settings
 
 router = APIRouter()
 
+# Map common crypto tickers to CoinGecko IDs (no API key required)
+COINGECKO_IDS: dict[str, str] = {
+    "BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana", "BNB": "binancecoin",
+    "XRP": "ripple", "ADA": "cardano", "DOGE": "dogecoin", "AVAX": "avalanche-2",
+    "MATIC": "matic-network", "DOT": "polkadot", "LINK": "chainlink", "UNI": "uniswap",
+    "AAVE": "aave", "LTC": "litecoin", "BCH": "bitcoin-cash", "ATOM": "cosmos",
+    "NEAR": "near", "APT": "aptos", "ARB": "arbitrum", "OP": "optimism",
+    "SUI": "sui", "INJ": "injective-protocol", "TIA": "celestia", "SEI": "sei-network",
+}
+
+# Map to Binance spot symbol (for order book / OHLCV)
+def _binance_symbol(symbol: str) -> str:
+    s = symbol.upper().replace("-", "").replace("/", "")
+    if s in COINGECKO_IDS and not s.endswith("USDT"):
+        return s + "USDT"
+    return s
+
 
 async def _fetch_ohlcv_yfinance(symbol: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame:
     try:
@@ -33,17 +50,67 @@ async def _fetch_ohlcv_yfinance(symbol: str, period: str = "1y", interval: str =
 
 @router.get("/quote/{symbol}")
 async def get_quote(symbol: str, current_user: User = Depends(get_current_user)):
-    """Real-time quote for any asset."""
-    if settings.FINNHUB_API_KEY:
+    """Real-time quote for any asset. Tries CoinGecko (crypto), Binance, Finnhub, then yfinance."""
+    sym_upper = symbol.upper()
+
+    # 1. CoinGecko — free, no key, covers all major crypto
+    if sym_upper in COINGECKO_IDS:
         try:
-            async with httpx.AsyncClient(timeout=10) as client:
+            coin_id = COINGECKO_IDS[sym_upper]
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.get(
+                    f"https://api.coingecko.com/api/v3/simple/price"
+                    f"?ids={coin_id}&vs_currencies=usd"
+                    f"&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true",
+                    headers={"Accept": "application/json"},
+                )
+                data = resp.json().get(coin_id, {})
+            if data.get("usd"):
+                return {
+                    "symbol": sym_upper,
+                    "price": data["usd"],
+                    "change_pct": round(data.get("usd_24h_change", 0), 3),
+                    "volume": data.get("usd_24h_vol", 0),
+                    "market_cap": data.get("usd_market_cap", 0),
+                    "source": "coingecko",
+                }
+        except Exception:
+            pass
+
+    # 2. Binance public REST — free, no key, real-time
+    if sym_upper in COINGECKO_IDS or sym_upper.endswith("USDT"):
+        try:
+            bs = _binance_symbol(sym_upper)
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.get(f"https://api.binance.com/api/v3/ticker/24hr?symbol={bs}")
+                data = resp.json()
+            if data.get("lastPrice"):
+                return {
+                    "symbol": sym_upper,
+                    "price": float(data["lastPrice"]),
+                    "change": float(data.get("priceChange", 0)),
+                    "change_pct": float(data.get("priceChangePercent", 0)),
+                    "high": float(data.get("highPrice", 0)),
+                    "low": float(data.get("lowPrice", 0)),
+                    "open": float(data.get("openPrice", 0)),
+                    "volume": float(data.get("volume", 0)),
+                    "source": "binance",
+                }
+        except Exception:
+            pass
+
+    # 3. Finnhub — free tier, stocks + crypto, requires API key
+    if settings.FINNHUB_API_KEY and not settings.FINNHUB_API_KEY.startswith("your-"):
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
                 resp = await client.get(
                     f"https://finnhub.io/api/v1/quote?symbol={symbol}&token={settings.FINNHUB_API_KEY}"
                 )
                 data = resp.json()
+            if data.get("c"):
                 return {
                     "symbol": symbol,
-                    "price": data.get("c", 0),
+                    "price": data["c"],
                     "change": data.get("d", 0),
                     "change_pct": data.get("dp", 0),
                     "high": data.get("h", 0),
@@ -54,7 +121,8 @@ async def get_quote(symbol: str, current_user: User = Depends(get_current_user))
                 }
         except Exception:
             pass
-    # Fallback: yfinance
+
+    # 4. yfinance — free, covers stocks/ETFs/forex, slightly delayed
     try:
         import yfinance as yf
         ticker = yf.Ticker(symbol)
@@ -64,15 +132,19 @@ async def get_quote(symbol: str, current_user: User = Depends(get_current_user))
         except Exception:
             hist = ticker.history(period="1d")
             price = float(hist["Close"].iloc[-1]) if not hist.empty else 0
-        return {
-            "symbol": symbol,
-            "price": price,
-            "high": float(info.day_high or 0),
-            "low": float(info.day_low or 0),
-            "source": "yfinance",
-        }
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not fetch quote for {symbol}: {e}")
+        if price:
+            return {
+                "symbol": symbol,
+                "price": price,
+                "high": float(info.day_high or 0),
+                "low": float(info.day_low or 0),
+                "prev_close": float(info.previous_close or 0),
+                "source": "yfinance",
+            }
+    except Exception:
+        pass
+
+    raise HTTPException(status_code=502, detail=f"Could not fetch quote for {symbol}")
 
 
 @router.get("/ohlcv/{symbol}")
@@ -172,13 +244,25 @@ async def search_symbols(
     q: str = Query(..., min_length=1),
     current_user: User = Depends(get_current_user),
 ):
-    if not settings.FINNHUB_API_KEY:
-        return {"result": []}
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(
-            f"https://finnhub.io/api/v1/search?q={q}&token={settings.FINNHUB_API_KEY}"
-        )
-        return resp.json()
+    q_upper = q.upper()
+    # Always include matching crypto from our known list
+    crypto_results = [
+        {"symbol": sym, "description": sym, "type": "Crypto"}
+        for sym in COINGECKO_IDS
+        if q_upper in sym
+    ]
+    # Try Finnhub for stocks if key is configured
+    if settings.FINNHUB_API_KEY and not settings.FINNHUB_API_KEY.startswith("your-"):
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.get(
+                    f"https://finnhub.io/api/v1/search?q={q}&token={settings.FINNHUB_API_KEY}"
+                )
+                data = resp.json()
+            return {"result": crypto_results + data.get("result", [])}
+        except Exception:
+            pass
+    return {"result": crypto_results}
 
 
 @router.get("/news/{symbol}")
