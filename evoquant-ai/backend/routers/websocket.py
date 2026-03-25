@@ -103,7 +103,7 @@ async def _stream_yfinance_stock(websocket: WebSocket, symbol: str):
     open_price = None
     while websocket.client_state == WebSocketState.CONNECTED:
         try:
-            hist = ticker.history(period="1d", interval="1m")
+            hist = await asyncio.to_thread(ticker.history, period="1d", interval="1m")
             if not hist.empty:
                 price = float(hist["Close"].iloc[-1])
                 if open_price is None:
@@ -171,10 +171,10 @@ async def orderbook_stream(websocket: WebSocket, symbol: str):
             import random
             ticker = yf.Ticker(symbol)
             try:
-                base_price = float(ticker.fast_info.last_price or 100)
+                base_price = await asyncio.to_thread(lambda: float(ticker.fast_info.last_price or 100))
             except Exception:
                 try:
-                    hist = ticker.history(period="1d")
+                    hist = await asyncio.to_thread(ticker.history, period="1d")
                     base_price = float(hist["Close"].iloc[-1]) if not hist.empty else 100.0
                 except Exception:
                     base_price = 100.0
